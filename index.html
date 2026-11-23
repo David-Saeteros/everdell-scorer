@@ -125,7 +125,7 @@
     { id:"palace",    name:"Palace",    desc:"+1 per Unique Construction (incl. itself)" },
     { id:"school",    name:"School",    desc:"+1 per Common Critter" },
     { id:"theatre",   name:"Theatre",   desc:"+1 per Unique Critter" },
-    { id:"wife",      name:"Wife",      desc:"+3 per Wife paired with a Husband" },
+    { id:"wife",      name:"Gatherer",  desc:"+3 per Gatherer paired with a Harvester" },
   ];
 
   const blank = (name) => ({
@@ -200,7 +200,7 @@
     if (on.palace)  h += stepper(i, "uc",  "Unique Constructions", "including the Palace");
     if (on.school)  h += stepper(i, "ccr", "Common Critters");
     if (on.theatre) h += stepper(i, "ucr", "Unique Critters");
-    if (on.wife)    h += stepper(i, "wives", "Wife cards in city") + stepper(i, "wivesPaired", "Wives paired with a Husband");
+    if (on.wife)    h += stepper(i, "wives", "Gatherer cards in city") + stepper(i, "wivesPaired", "Gatherers paired with a Harvester");
     if (on.architect) h += `<p class="hint">Architect uses the resin + pebbles entered under Leftover resources.</p>`;
     if (on.king)      h += `<p class="hint">King uses the event counts entered under Events.</p>`;
     if (on.evertree)  h += `<p class="hint">Ever Tree counts the purple cards ticked above automatically.</p>`;
