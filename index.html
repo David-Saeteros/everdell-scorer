@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Everdell Scorer</title>
+<meta name="theme-color" content="#2f4a32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4ecdb; --paper:#fffaf0; --ink:#2b2a24; --muted:#7a7262;
+    --forest:#2f4a32; --moss:#5d7d44; --berry:#8c2f4a; --resin:#c98a2b;
+    --line:#e2d6bd; --purple:#6a4c93; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito Sans",system-ui,sans-serif;font-size:16px}
+  h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0}
+  button{font:inherit;cursor:pointer}
+  header{background:var(--forest);color:#f4ecdb;padding:18px 16px 14px;}
+  header h1{font-size:1.6rem;letter-spacing:.01em}
+  header p{margin:4px 0 0;opacity:.8;font-size:.9rem}
+  .wrap{max-width:760px;margin:0 auto;padding:0 12px 80px}
+
+  /* sticky scoreboard */
+  .board{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px;border-bottom:1px solid var(--line);display:flex;gap:8px;overflow-x:auto}
+  .chip{flex:1 0 auto;min-width:90px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:6px 10px;text-align:center}
+  .chip .n{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .chip .t{font-family:"Fraunces",serif;font-size:1.5rem;font-weight:700;color:var(--forest)}
+  .chip.lead{border-color:var(--resin);box-shadow:0 0 0 2px var(--resin) inset}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .btn{border:1px solid var(--forest);background:var(--paper);color:var(--forest);padding:9px 14px;border-radius:10px;font-weight:700}
+  .btn.primary{background:var(--forest);color:#fff}
+  .btn.danger{border-color:var(--berry);color:var(--berry)}
+  .btn:disabled{opacity:.4;cursor:default}
+
+  .player{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);margin:14px 0;overflow:hidden}
+  .phead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .phead input{flex:1;border:none;background:transparent;font-family:"Fraunces",serif;font-size:1.25rem;font-weight:700;color:var(--ink);min-width:0}
+  .phead input:focus{outline:2px dashed var(--line);border-radius:6px}
+  .ptotal{font-family:"Fraunces",serif;font-size:1.6rem;font-weight:700;color:var(--forest)}
+  .xbtn{border:none;background:none;color:var(--muted);font-size:1.3rem;padding:0 4px}
+  .sec{padding:10px 14px}
+  .sec + .sec{border-top:1px dashed var(--line)}
+  .sec h3{font-size:.95rem;color:var(--muted);font-weight:500;margin-bottom:6px;display:flex;justify-content:space-between}
+  .sec h3 b{color:var(--ink)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
+  .row label{flex:1;line-height:1.2}
+  .row small{display:block;color:var(--muted);font-size:.78rem}
+  .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .step button{width:38px;height:38px;border:none;background:#f1e8d4;color:var(--forest);font-size:1.2rem;font-weight:700}
+  .step input{width:52px;height:38px;border:none;text-align:center;font-size:1.05rem;font-weight:700;-moz-appearance:textfield;background:#fff;color:var(--ink)}
+  .step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:6px}
+  .pcard{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;user-select:none}
+  .pcard input{accent-color:var(--purple);width:18px;height:18px}
+  .pcard.on{border-color:var(--purple);background:#f3eefa}
+  .pcard span{font-weight:600}
+  .pcard em{margin-left:auto;font-style:normal;color:var(--purple);font-weight:700}
+  .sub{padding-left:8px;border-left:3px solid #e6dcf2;margin:4px 0 8px}
+  .hint{color:var(--muted);font-size:.8rem;margin:2px 0 0}
+
+  .results{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:14px 0}
+  .results ol{margin:8px 0 0;padding-left:22px}
+  .results li{padding:3px 0}
+  .results .win{font-weight:700;color:var(--forest)}
+
+  .history table{width:100%;border-collapse:collapse;font-size:.9rem}
+  .history th,.history td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+  .history th{color:var(--muted);font-weight:600}
+  .empty{color:var(--muted);font-style:italic}
+  details summary{cursor:pointer;font-family:"Fraunces",serif;font-size:1.15rem;font-weight:700;padding:4px 0}
+  footer{color:var(--muted);font-size:.78rem;text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="padding-bottom:0">
+    <h1>🌳 Everdell Scorer</h1>
+    <p>End-of-game counting for the base game</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="board" id="board"></div>
+
+  <div class="toolbar">
+    <button class="btn" id="addP">+ Player</button>
+    <button class="btn primary" id="save">Save game</button>
+    <button class="btn danger" id="reset">New game</button>
+  </div>
+
+  <div id="players"></div>
+
+  <div class="results" id="results"></div>
+
+  <div class="results history">
+    <details id="histBox">
+      <summary>Game log</summary>
+      <div id="history"></div>
+      <div class="toolbar">
+        <button class="btn" id="csv">Export CSV</button>
+        <button class="btn danger" id="clearHist">Clear log</button>
+      </div>
+    </details>
+  </div>
+
+  <footer>Ties: most events achieved, then most leftover resources.<br>Scores are kept in this browser only.</footer>
+</div>
+
+<script>
+(() => {
+  const KEY_CUR = "everdell.current.v1";
+  const KEY_HIST = "everdell.history.v1";
+  const MAX_P = 4;
+
+  const PROSPERITY = [
+    { id:"architect", name:"Architect", desc:"+1 per leftover resin & pebble (max 6)" },
+    { id:"castle",    name:"Castle",    desc:"+1 per Common Construction" },
+    { id:"evertree",  name:"Ever Tree", desc:"+1 per purple Prosperity card (incl. itself)" },
+    { id:"king",      name:"King",      desc:"+1 per Basic Event, +2 per Special Event" },
+    { id:"palace",    name:"Palace",    desc:"+1 per Unique Construction (incl. itself)" },
+    { id:"school",    name:"School",    desc:"+1 per Common Critter" },
+    { id:"theatre",   name:"Theatre",   desc:"+1 per Unique Critter" },
+    { id:"wife",      name:"Wife",      desc:"+3 per Wife paired with a Husband" },
+  ];
+
+  const blank = (name) => ({
+    name, card:0, tokens:0, journey:0,
+    basicEv:0, specialEv:0, specialPts:0,
+    prosp:{}, cc:0, uc:0, ccr:0, ucr:0, wives:1, wivesPaired:0,
+    twigs:0, resin:0, pebbles:0, berries:0
+  });
+
+  const store = {
+    get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+
+  let players = store.get(KEY_CUR, null) || [blank("Player 1"), blank("Player 2")];
+  let history = store.get(KEY_HIST, []);
+
+  const n = v => Math.max(0, parseInt(v, 10) || 0);
+
+  function prospBreakdown(p){
+    const on = p.prosp || {};
+    const purple = ["architect","castle","evertree","king","palace","school","theatre"]
+      .filter(k => on[k]).length + (on.wife ? n(p.wives) : 0);
+    const b = {
+      architect: on.architect ? Math.min(6, n(p.resin) + n(p.pebbles)) : 0,
+      castle:    on.castle ? n(p.cc) : 0,
+      evertree:  on.evertree ? purple : 0,
+      king:      on.king ? n(p.basicEv) + 2 * n(p.specialEv) : 0,
+      palace:    on.palace ? n(p.uc) : 0,
+      school:    on.school ? n(p.ccr) : 0,
+      theatre:   on.theatre ? n(p.ucr) : 0,
+      wife:      on.wife ? 3 * Math.min(n(p.wivesPaired), n(p.wives)) : 0,
+    };
+    b.total = Object.values(b).reduce((a, c) => a + c, 0);
+    return b;
+  }
+
+  function score(p){
+    const pb = prospBreakdown(p);
+    const events = 3 * n(p.basicEv) + n(p.specialPts);
+    return {
+      card:n(p.card), tokens:n(p.tokens), journey:n(p.journey),
+      prosperity:pb.total, events, pb,
+      total: n(p.card) + n(p.tokens) + n(p.journey) + pb.total + events,
+      evCount: n(p.basicEv) + n(p.specialEv),
+      leftovers: n(p.twigs) + n(p.resin) + n(p.pebbles) + n(p.berries)
+    };
+  }
+
+  function ranking(){
+    return players.map((p, i) => ({ i, name: p.name || `Player ${i+1}`, s: score(p) }))
+      .sort((a, b) => b.s.total - a.s.total || b.s.evCount - a.s.evCount || b.s.leftovers - a.s.leftovers);
+  }
+
+  // ---------- rendering ----------
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+  const stepper = (i, k, label, help = "") => `
+    <div class="row">
+      <label for="f${i}${k}">${label}${help ? `<small>${help}</small>` : ""}</label>
+      <div class="step">
+        <button type="button" data-p="${i}" data-k="${k}" data-d="-1" aria-label="minus">−</button>
+        <input id="f${i}${k}" type="number" inputmode="numeric" min="0" data-p="${i}" data-k="${k}" value="${n(players[i][k])}">
+        <button type="button" data-p="${i}" data-k="${k}" data-d="1" aria-label="plus">+</button>
+      </div>
+    </div>`;
+
+  function prospExtras(i){
+    const p = players[i], on = p.prosp || {};
+    let h = "";
+    if (on.castle)  h += stepper(i, "cc",  "Common Constructions");
+    if (on.palace)  h += stepper(i, "uc",  "Unique Constructions", "including the Palace");
+    if (on.school)  h += stepper(i, "ccr", "Common Critters");
+    if (on.theatre) h += stepper(i, "ucr", "Unique Critters");
+    if (on.wife)    h += stepper(i, "wives", "Wife cards in city") + stepper(i, "wivesPaired", "Wives paired with a Husband");
+    if (on.architect) h += `<p class="hint">Architect uses the resin + pebbles entered under Leftover resources.</p>`;
+    if (on.king)      h += `<p class="hint">King uses the event counts entered under Events.</p>`;
+    if (on.evertree)  h += `<p class="hint">Ever Tree counts the purple cards ticked above automatically.</p>`;
+    return h ? `<div class="sub">${h}</div>` : "";
+  }
+
+  function renderPlayers(){
+    document.getElementById("players").innerHTML = players.map((p, i) => {
+      const s = score(p), on = p.prosp || {};
+      return `
+      <div class="player">
+        <div class="phead">
+          <input value="${esc(p.name)}" data-p="${i}" data-k="name" aria-label="Player name">
+          <div class="ptotal" id="tot${i}">${s.total}</div>
+          ${players.length > 1 ? `<button class="xbtn" data-del="${i}" title="Remove player">✕</button>` : ""}
+        </div>
+
+        <div class="sec">
+          <h3>Cards &amp; tokens <b id="ct${i}">${s.card + s.tokens}</b></h3>
+          ${stepper(i, "card", "Printed points on cards", "add up the leaf value of every card in the city")}
+          ${stepper(i, "tokens", "Point tokens")}
+        </div>
+
+        <div class="sec">
+          <h3>Journey <b id="jo${i}">${s.journey}</b></h3>
+          ${stepper(i, "journey", "Journey points", "2 (shared) · 3 · 4 · 5 — sum all workers")}
+        </div>
+
+        <div class="sec">
+          <h3>Events <b id="ev${i}">${s.events}</b></h3>
+          ${stepper(i, "basicEv", "Basic Events achieved", "3 points each")}
+          ${stepper(i, "specialEv", "Special Events achieved", "count, for King & tiebreak")}
+          ${stepper(i, "specialPts", "Special Event points", "total printed on those cards")}
+        </div>
+
+        <div class="sec">
+          <h3>Prosperity bonuses <b id="pr${i}">${s.prosperity}</b></h3>
+          <div class="pgrid">
+            ${PROSPERITY.map(c => `
+              <label class="pcard ${on[c.id] ? "on" : ""}" title="${c.desc}">
+                <input type="checkbox" data-p="${i}" data-pr="${c.id}" ${on[c.id] ? "checked" : ""}>
+                <span>${c.name}</span><em id="pb${i}${c.id}">${on[c.id] ? "+" + s.pb[c.id] : ""}</em>
+              </label>`).join("")}
+          </div>
+          <p class="hint">Tick the purple cards in this city. Their printed points go in “Printed points on cards”.</p>
+          ${prospExtras(i)}
+        </div>
+
+        <div class="sec">
+          <h3>Leftover resources <b id="lo${i}">${s.leftovers}</b></h3>
+          ${stepper(i, "twigs", "Twigs")}
+          ${stepper(i, "resin", "Resin")}
+          ${stepper(i, "pebbles", "Pebbles")}
+          ${stepper(i, "berries", "Berries")}
+          <p class="hint">Only used for Architect and the tiebreak.</p>
+        </div>
+      </div>`;
+    }).join("");
+    document.getElementById("addP").disabled = players.length >= MAX_P;
+  }
+
+  function renderSummary(){
+    const r = ranking();
+    const top = r[0];
+    document.getElementById("board").innerHTML = players.map((p, i) => {
+      const t = score(p).total;
+      return `<div class="chip ${top && top.i === i && t > 0 ? "lead" : ""}"><div class="n">${esc(p.name || `Player ${i+1}`)}</div><div class="t">${t}</div></div>`;
+    }).join("");
+
+    players.forEach((p, i) => {
+      const s = score(p);
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set("tot" + i, s.total); set("ct" + i, s.card + s.tokens); set("jo" + i, s.journey);
+      set("ev" + i, s.events); set("pr" + i, s.prosperity); set("lo" + i, s.leftovers);
+      PROSPERITY.forEach(c => set(`pb${i}${c.id}`, (p.prosp || {})[c.id] ? "+" + s.pb[c.id] : ""));
+    });
+
+    const tieNote = (a, b) => {
+      if (!b || a.s.total !== b.s.total) return "";
+      if (a.s.evCount !== b.s.evCount) return " (wins tie on events)";
+      if (a.s.leftovers !== b.s.leftovers) return " (wins tie on leftover resources)";
+      return " (still tied)";
+    };
+    document.getElementById("results").innerHTML = `
+      <h2>Standings</h2>
+      <ol>${r.map((x, k) => `<li class="${k === 0 ? "win" : ""}">${esc(x.name)} — ${x.s.total} pts${k === 0 ? tieNote(x, r[1]) : ""}
+        <small class="hint" style="display:block">cards ${x.s.card} · tokens ${x.s.tokens} · journey ${x.s.journey} · events ${x.s.events} · prosperity ${x.s.prosperity}</small></li>`).join("")}</ol>`;
+    store.set(KEY_CUR, players);
+  }
+
+  function renderHistory(){
+    const el = document.getElementById("history");
+    if (!history.length){ el.innerHTML = `<p class="empty">No saved games yet.</p>`; return; }
+    el.innerHTML = `<table><thead><tr><th>Date</th><th>Winner</th><th>Scores</th><th></th></tr></thead><tbody>${
+      history.slice().reverse().map((g, ri) => {
+        const idx = history.length - 1 - ri;
+        return `<tr><td>${new Date(g.date).toLocaleDateString()}</td><td><b>${esc(g.winner)}</b></td>
+          <td>${g.results.map(x => `${esc(x.name)} ${x.total}`).join(" · ")}</td>
+          <td><button class="xbtn" data-hdel="${idx}" title="Delete">✕</button></td></tr>`;
+      }).join("")}</tbody></table>`;
+  }
+
+  function renderAll(){ renderPlayers(); renderSummary(); renderHistory(); }
+
+  // ---------- events ----------
+  const root = document.body;
+
+  root.addEventListener("input", e => {
+    const t = e.target, i = t.dataset.p, k = t.dataset.k;
+    if (i === undefined || !k) return;
+    players[i][k] = k === "name" ? t.value : n(t.value);
+    renderSummary();
+  });
+
+  root.addEventListener("change", e => {
+    const t = e.target;
+    if (t.dataset.pr){
+      const p = players[t.dataset.p];
+      p.prosp = p.prosp || {};
+      p.prosp[t.dataset.pr] = t.checked;
+      renderPlayers(); renderSummary();
+    }
+  });
+
+  root.addEventListener("click", e => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.d){
+      const p = players[t.dataset.p], k = t.dataset.k;
+      p[k] = Math.max(0, n(p[k]) + parseInt(t.dataset.d, 10));
+      const inp = document.getElementById(`f${t.dataset.p}${k}`);
+      if (inp) inp.value = p[k];
+      // wife sub-fields change Ever Tree count; re-render is cheap
+      renderSummary();
+      return;
+    }
+    if (t.dataset.del !== undefined){
+      const i = +t.dataset.del;
+      if (confirmSafe(`Remove ${players[i].name || "this player"}?`)){ players.splice(i, 1); renderAll(); }
+      return;
+    }
+    if (t.dataset.hdel !== undefined){
+      history.splice(+t.dataset.hdel, 1); store.set(KEY_HIST, history); renderHistory(); return;
+    }
+    switch (t.id){
+      case "addP":
+        if (players.length < MAX_P){ players.push(blank(`Player ${players.length + 1}`)); renderAll(); }
+        break;
+      case "reset":
+        if (confirmSafe("Clear all scores and start a new game? (Names are kept.)")){
+          players = players.map(p => blank(p.name)); renderAll(); window.scrollTo({ top:0, behavior:"smooth" });
+        }
+        break;
+      case "save": {
+        const r = ranking();
+        history.push({
+          date: new Date().toISOString(),
+          winner: r[0].name,
+          results: r.map(x => ({ name:x.name, total:x.s.total, card:x.s.card, tokens:x.s.tokens,
+            journey:x.s.journey, events:x.s.events, prosperity:x.s.prosperity }))
+        });
+        store.set(KEY_HIST, history); renderHistory();
+        document.getElementById("histBox").open = true;
+        t.textContent = "Saved ✓"; setTimeout(() => t.textContent = "Save game", 1500);
+        break;
+      }
+      case "clearHist":
+        if (confirmSafe("Delete the whole game log?")){ history = []; store.set(KEY_HIST, history); renderHistory(); }
+        break;
+      case "csv": exportCSV(); break;
+    }
+  });
+
+  function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
+
+  function exportCSV(){
+    const rows = [["date","player","rank","total","cards","tokens","journey","events","prosperity"]];
+    history.forEach(g => g.results.forEach((x, k) =>
+      rows.push([g.date, x.name, k + 1, x.total, x.card, x.tokens, x.journey, x.events, x.prosperity])));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
+    a.download = "everdell-games.csv";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
